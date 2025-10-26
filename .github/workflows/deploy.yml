@@ -54,14 +54,14 @@ jobs:
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
-          DATABASE_HOST: "sentiment-infra-postgres-1"
+          DATABASE_HOST: "localhost"
           DATABASE_PORT: "5432"
           DATABASE_NAME: ${{ secrets.POSTGRES_DB }}
           DATABASE_USER: ${{ secrets.POSTGRES_USER }}
           DATABASE_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
-          N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
+          N8N_WEBHOOK_URL: "http://localhost:5678"
           PORT: "3000"
           NODE_ENV: "production"
         run: |

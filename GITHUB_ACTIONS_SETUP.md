@@ -89,8 +89,9 @@ Go to your repository: **Settings → Secrets and variables → Actions → New 
 
 #### 9. `N8N_WEBHOOK_URL` (Optional)
 - **Value**: n8n webhook endpoint
-- **Default**: `http://sentiment-infra-n8n-1:5678/webhook/ingest/scrape`
-- **Only set if** you have a custom n8n URL
+- **Default**: `http://localhost:5678/webhook/ingest/scrape`
+- **Note**: Uses localhost since Docker exposes port 5678 to host
+- **Only set if** you have a custom n8n URL or different webhook path
 
 ---
 
@@ -275,12 +276,14 @@ curl -X POST http://<EC2_IP>:3000/api/scrape \
 - Verify Docker network: `docker network ls | grep sentiment-infra`
 - Test database connection: `cd ~/sentiment-backend && npm run test:db`
 
-### "Cannot resolve sentiment-infra-postgres-1"
-**Cause**: Not connected to Docker network
+### "Cannot connect to database"
+**Cause**: Database not accessible on localhost:5432
 **Solution**:
 - SSH to EC2
-- Run: `cd ~/sentiment-backend && bash scripts/join-docker-network.sh`
-- Verify: `docker network inspect sentiment-infra_app-network`
+- Verify PostgreSQL container is running: `docker ps | grep postgres`
+- Check if port 5432 is exposed: `docker port sentiment-infra-postgres-1 5432`
+- Verify .env has `DATABASE_HOST=localhost` (not container name)
+- Test connection: `nc -zv localhost 5432`
 
 See `TROUBLESHOOTING.md` for more detailed solutions.
 

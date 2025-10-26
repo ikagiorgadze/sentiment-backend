@@ -29,10 +29,10 @@ fi
 
 echo "✅ Prerequisites checked"
 
-# Join Docker network (if not already joined)
+# Check Docker network (informational only)
 echo ""
-echo "🐳 Ensuring Docker network connection..."
-bash scripts/join-docker-network.sh
+echo "🐳 Checking Docker connectivity..."
+bash scripts/join-docker-network.sh || echo "⚠️  Skipping Docker network check"
 
 # Install dependencies
 echo ""
