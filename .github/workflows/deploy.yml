@@ -86,7 +86,7 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
           echo "Running deployment script..."
-          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $EC2_USER@$EC2_HOST "cd ~/sentiment-backend && bash scripts/deploy.sh"
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -o ServerAliveCountMax=10 $EC2_USER@$EC2_HOST "cd ~/sentiment-backend && bash scripts/deploy.sh"
 
       - name: Health check
         env:

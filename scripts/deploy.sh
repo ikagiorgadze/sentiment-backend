@@ -42,7 +42,13 @@ npm ci --production=false
 # Build TypeScript
 echo ""
 echo "🔨 Building TypeScript..."
-npm run build
+echo "   This may take 1-3 minutes..."
+if npm run build; then
+  echo "✅ Build successful"
+else
+  echo "❌ Build failed"
+  exit 1
+fi
 
 # Create logs directory
 mkdir -p logs
