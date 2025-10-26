@@ -56,8 +56,15 @@ ssh ubuntu@<EC2_IP>
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# Install PM2 globally
+# Verify Node.js and npm
+node --version  # Should be 18.x or higher
+npm --version
+
+# Install PM2 globally (requires sudo)
 sudo npm install -g pm2
+
+# Verify PM2 installation
+pm2 --version
 
 # Ensure user is in docker group (for network access)
 sudo usermod -aG docker $USER

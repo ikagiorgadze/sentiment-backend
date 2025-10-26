@@ -22,8 +22,9 @@ if ! command -v npm >/dev/null 2>&1; then
 fi
 
 if ! command -v pm2 >/dev/null 2>&1; then
-  echo "❌ PM2 is not installed. Installing globally..."
-  npm install -g pm2
+  echo "❌ PM2 is not installed. Please install it manually:"
+  echo "   sudo npm install -g pm2"
+  exit 1
 fi
 
 echo "✅ Prerequisites checked"

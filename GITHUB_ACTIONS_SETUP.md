@@ -8,9 +8,21 @@ This guide will help you configure automated deployment of the sentiment-backend
 - **Same EC2 instance** as sentiment-infra
 - Ubuntu/Amazon Linux
 - Node.js 18+ installed
-- PM2 installed globally (`npm install -g pm2`)
+- **PM2 installed globally** (see commands below)
 - User in `docker` group (for network access)
 - SSH access configured
+
+**Install PM2 before first deployment**:
+```bash
+# SSH to EC2
+ssh ubuntu@<EC2_IP>
+
+# Install PM2 globally (requires sudo)
+sudo npm install -g pm2
+
+# Verify installation
+pm2 --version
+```
 
 ### 2. sentiment-infra Deployed
 The backend requires the infra services to be running:
