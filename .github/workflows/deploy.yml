@@ -61,7 +61,7 @@ jobs:
           DATABASE_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
-          N8N_WEBHOOK_URL: "http://localhost:5678"
+          N8N_WEBHOOK_URL: "http://localhost:5678/webhook/ingest/scrape"
           PORT: "3000"
           NODE_ENV: "production"
         run: |
