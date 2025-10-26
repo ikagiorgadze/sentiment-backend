@@ -1,0 +1,113 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+          # Try to get host key, but don't fail if it doesn't work
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || {
+            echo "⚠️  ssh-keyscan failed, adding SSH config to disable strict host checking"
+            cat >> ~/.ssh/config <<EOF
+          Host ${{ secrets.EC2_HOST }}
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+          }
+
+      - name: Test SSH Connection
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          echo "Testing SSH connection to $EC2_USER@$EC2_HOST..."
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -v $EC2_USER@$EC2_HOST "echo 'SSH connection successful'"
+
+      - name: Copy files to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          echo "Copying files to EC2..."
+          rsync -avz --exclude='.git' --exclude='node_modules' --exclude='dist' --exclude='_*.md' \
+            -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            ./ $EC2_USER@$EC2_HOST:~/sentiment-backend/
+          echo "✅ Files copied successfully"
+
+      - name: Create .env file on EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          DATABASE_HOST: "sentiment-infra-postgres-1"
+          DATABASE_PORT: "5432"
+          DATABASE_NAME: ${{ secrets.POSTGRES_DB }}
+          DATABASE_USER: ${{ secrets.POSTGRES_USER }}
+          DATABASE_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+          N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
+          PORT: "3000"
+          NODE_ENV: "production"
+        run: |
+          echo "Creating .env file on EC2..."
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $EC2_USER@$EC2_HOST "cd ~/sentiment-backend && bash scripts/setup-env.sh" <<EOF
+          $DATABASE_HOST
+          $DATABASE_PORT
+          $DATABASE_NAME
+          $DATABASE_USER
+          $DATABASE_PASSWORD
+          $JWT_SECRET
+          $JWT_EXPIRES_IN
+          $N8N_WEBHOOK_URL
+          $PORT
+          $NODE_ENV
+          EOF
+          echo "✅ Environment file created"
+
+      - name: Deploy Backend
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          echo "Running deployment script..."
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $EC2_USER@$EC2_HOST "cd ~/sentiment-backend && bash scripts/deploy.sh"
+
+      - name: Health check
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          echo "Running health check..."
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $EC2_USER@$EC2_HOST "cd ~/sentiment-backend && bash scripts/health-check.sh"
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "=========================================="
+          echo "✅ Deployment Successful!"
+          echo "=========================================="
+          echo ""
+          echo "Backend API: http://${{ secrets.EC2_HOST }}:3000"
+          echo "Health Check: http://${{ secrets.EC2_HOST }}:3000/health"
+          echo "API Docs: http://${{ secrets.EC2_HOST }}:3000/"
+          echo ""
+          echo "Next steps:"
+          echo "1. Test the health endpoint"
+          echo "2. Verify database connection"
+          echo "3. Test API endpoints"

@@ -1,2 +1,11 @@
 node_modules
 dist
+.env
+logs/
+*.log
+
+# Breadcrumb documentation files (internal use only)
+_*.md
+_DEPLOYMENT_ARCHITECTURE.md
+_ENVIRONMENT_VARIABLES.md
+_PROJECT_STRUCTURE.md
