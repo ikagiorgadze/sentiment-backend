@@ -14,6 +14,7 @@ export class UserRepository {
       includeComments,
       includeReactions,
       includeStats,
+      onlyWithComments = false,
     } = options;
 
     const whereClauses: string[] = [];
@@ -28,6 +29,10 @@ export class UserRepository {
     if (full_name) {
       whereClauses.push(`u.full_name ILIKE $${paramCount++}`);
       params.push(`%${full_name}%`);
+    }
+
+    if (onlyWithComments) {
+      whereClauses.push(`EXISTS (SELECT 1 FROM comments c WHERE c.user_id = u.id)`);
     }
 
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -551,7 +556,6 @@ export class UserRepository {
     return user;
   }
 }
-
 
 
 

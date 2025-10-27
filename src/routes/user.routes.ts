@@ -37,6 +37,10 @@ const userService = new UserService();
  */
 router.get('/', async (req: Request, res: Response) => {
   try {
+    const onlyWithCommentsParam = req.query.onlyWithComments as string | undefined;
+    const onlyWithComments =
+      typeof onlyWithCommentsParam === 'string' ? onlyWithCommentsParam === 'true' : true;
+
     const options: UserQueryOptions = {
       limit: 100,
       offset: 0,
@@ -47,6 +51,7 @@ router.get('/', async (req: Request, res: Response) => {
       includeComments: req.query.includeComments === 'true',
       includeReactions: req.query.includeReactions === 'true',
       includeStats: req.query.includeStats === 'true',
+      onlyWithComments,
     };
 
     const users = await userService.getAllUsers(options);
@@ -125,4 +130,3 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 export default router;
-
