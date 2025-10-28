@@ -9,7 +9,7 @@ export class UserService {
     this.userRepository = new UserRepository();
   }
 
-  async getAllUsers(options: UserQueryOptions): Promise<UserWithDetails[]> {
+  async getAllUsers(options: UserQueryOptions): Promise<{ users: UserWithDetails[]; totalCount: number }> {
     return this.userRepository.findAll(options);
   }
 

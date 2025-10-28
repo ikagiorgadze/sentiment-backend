@@ -3,7 +3,7 @@ import { UserWithDetails, Comment, Reaction, Sentiment } from '../interfaces/mod
 import { UserQueryOptions } from '../interfaces/query-options';
 
 export class UserRepository {
-  async findAll(options: UserQueryOptions = {}): Promise<UserWithDetails[]> {
+  async findAll(options: UserQueryOptions = {}): Promise<{ users: UserWithDetails[]; totalCount: number }> {
     const {
       limit = 100,
       offset = 0,
@@ -37,7 +37,7 @@ export class UserRepository {
 
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    const selectFields = ['u.*'];
+    const selectFields = ['u.*', 'COUNT(*) OVER()::int AS total_count'];
 
     if (includeComments || includeStats) {
       selectFields.push('COALESCE(comment_count_sub.count, 0)::int AS comment_count');
@@ -136,20 +136,51 @@ export class UserRepository {
       );
     }
 
+    const normalizedDirection = orderDirection === 'ASC' ? 'ASC' : 'DESC';
+    const orderableColumns: Record<string, string> = {
+      inserted_at: 'u.inserted_at',
+      full_name: 'u.full_name',
+    };
+
+    if (includeComments || includeStats) {
+      orderableColumns.comment_count = 'COALESCE(comment_count_sub.count, 0)';
+    }
+
+    if (includeReactions || includeStats) {
+      orderableColumns.reaction_count = 'COALESCE(reaction_count_sub.count, 0)';
+    }
+
+    if (includeStats) {
+      orderableColumns.stats_total_comments = 'COALESCE(stats_comments.total_comments, 0)';
+      orderableColumns.stats_total_reactions = 'COALESCE(stats_reactions.total_reactions, 0)';
+      orderableColumns.stats_positive_comments = 'COALESCE(stats_sentiments.positive_comments, 0)';
+      orderableColumns.stats_negative_comments = 'COALESCE(stats_sentiments.negative_comments, 0)';
+      orderableColumns.stats_neutral_comments = 'COALESCE(stats_sentiments.neutral_comments, 0)';
+    }
+
+    const orderExpression = orderableColumns[orderBy] ?? 'u.inserted_at';
+
     const query = `
       SELECT ${selectFields.join(',\n        ')}
       FROM users u
       ${statsJoins.length > 0 ? statsJoins.join('\n      ') : ''}
       ${whereClause}
-      ORDER BY u.${orderBy} ${orderDirection}
+      ORDER BY ${orderExpression} ${normalizedDirection}
       LIMIT $${paramCount++} OFFSET $${paramCount++}
     `;
 
-    params.push(limit, offset);
+    const safeLimit = limit > 0 ? limit : 100;
+    const safeOffset = offset >= 0 ? offset : 0;
+    const dataParams = [...params, safeLimit, safeOffset];
 
-    const result = await pool.query(query, params);
+    const result = await pool.query(query, dataParams);
+    const totalCount =
+      result.rows.length > 0 && result.rows[0].total_count !== undefined && result.rows[0].total_count !== null
+        ? Number(result.rows[0].total_count)
+        : 0;
     const users: UserWithDetails[] = result.rows.map((row) => {
       const {
+        total_count,
         stats_total_comments,
         stats_posts_commented,
         stats_total_reactions,
@@ -330,7 +361,7 @@ export class UserRepository {
       }
     }
 
-    return users;
+    return { users, totalCount };
   }
 
   async findById(id: string, options: UserQueryOptions = {}): Promise<UserWithDetails | null> {
@@ -556,7 +587,4 @@ export class UserRepository {
     return user;
   }
 }
-
-
-
 
