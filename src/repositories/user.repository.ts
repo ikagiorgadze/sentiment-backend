@@ -37,7 +37,7 @@ export class UserRepository {
 
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    const selectFields = ['u.*', 'COUNT(*) OVER()::int AS total_count'];
+    const selectFields = ['u.*'];
 
     if (includeComments || includeStats) {
       selectFields.push('COALESCE(comment_count_sub.count, 0)::int AS comment_count');
@@ -173,14 +173,19 @@ export class UserRepository {
     const safeOffset = offset >= 0 ? offset : 0;
     const dataParams = [...params, safeLimit, safeOffset];
 
+    const countQuery = `
+      SELECT COUNT(*)::int AS total
+      FROM users u
+      ${whereClause}
+    `;
+
+    const countParams = [...params];
+    const countResult = await pool.query(countQuery, countParams);
+    const totalCount = Number(countResult.rows?.[0]?.total ?? 0);
+
     const result = await pool.query(query, dataParams);
-    const totalCount =
-      result.rows.length > 0 && result.rows[0].total_count !== undefined && result.rows[0].total_count !== null
-        ? Number(result.rows[0].total_count)
-        : 0;
     const users: UserWithDetails[] = result.rows.map((row) => {
       const {
-        total_count,
         stats_total_comments,
         stats_posts_commented,
         stats_total_reactions,
@@ -587,4 +592,3 @@ export class UserRepository {
     return user;
   }
 }
-
