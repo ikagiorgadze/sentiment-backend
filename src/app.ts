@@ -2,6 +2,7 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
+import { pool } from './config/database';
 import postRoutes from './routes/post.routes';
 import commentRoutes from './routes/comment.routes';
 import userRoutes from './routes/user.routes';
@@ -15,6 +16,7 @@ import scrapeRoutes from './routes/scrape.routes';
 import webhookRoutes from './routes/webhook.routes';
 import scrapeStatusRoutes from './routes/scrape-status.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import { createChatRoutes } from './routes/chat.routes';
 
 const app: Application = express();
 
@@ -78,6 +80,7 @@ app.use('/api/seed', seedRoutes);
 app.use('/api/scrape', scrapeRoutes);
 app.use('/api/scrape', scrapeStatusRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/chat', createChatRoutes(pool));
 
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {
@@ -89,15 +92,16 @@ app.get('/', (_req: Request, res: Response) => {
       auth: '/api/auth',
       access: '/api/access',
       posts: '/api/posts',
-  pages: '/api/pages',
+      pages: '/api/pages',
       comments: '/api/comments',
       users: '/api/users',
       sentiments: '/api/sentiments',
       analytics: '/api/analytics',
-  dashboard: '/api/dashboard',
+      dashboard: '/api/dashboard',
       seed: '/api/seed',
       scrape: '/api/scrape',
       webhooks: '/api/webhooks',
+      chat: '/api/chat',
     },
   });
 });
